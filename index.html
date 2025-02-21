@@ -3,45 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Code Generator</title>
+    <title>Dynamic Data Entry</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Dynamic Code Generator</h1>
+        <h1>Dynamic Data Entry</h1>
         
-        <div class="input-group">
-            <label for="input1">First Input:</label>
-            <input type="text" id="input1" placeholder="Enter your first value">
+        <div class="input-section">
+            <h2>Add New Entry</h2>
+            <div class="input-group">
+                <label for="input1">First Value:</label>
+                <input type="text" id="input1" placeholder="Enter your first value">
+            </div>
+            
+            <div class="input-group">
+                <label for="input2">Second Value:</label>
+                <input type="text" id="input2" placeholder="Enter your second value">
+            </div>
+            
+            <div class="button-group">
+                <button id="generateBtn">Generate Entry</button>
+                <button id="pushToGithubBtn">Save to GitHub</button>
+                <button id="copyCodeBtn">Copy Code</button>
+            </div>
+            
+            <div id="statusMessage" class="status"></div>
+            
+            <div>
+                <h3>Preview of New Entry:</h3>
+                <div id="preview" class="preview"></div>
+            </div>
+            
+            <div class="input-group code-output">
+                <label for="codeOutput">Generated Code:</label>
+                <textarea id="codeOutput" readonly></textarea>
+            </div>
         </div>
         
-        <div class="input-group">
-            <label for="input2">Second Input:</label>
-            <input type="text" id="input2" placeholder="Enter your second value">
-        </div>
-        
-        <div class="input-group">
-            <label for="codeOutput">Generated Code for data.js:</label>
-            <textarea id="codeOutput" readonly></textarea>
-        </div>
-        
-        <div class="button-group">
-            <button id="generateBtn">Generate Code</button>
-            <button id="pushToGithubBtn">Push to GitHub</button>
-            <button id="copyCodeBtn">Copy Code</button>
-        </div>
-        
-        <div id="statusMessage" class="status"></div>
-        
-        <div>
-            <h3>Preview:</h3>
-            <div id="preview" class="preview"></div>
+        <div class="data-display-section">
+            <h2>Existing Data Entries</h2>
+            <div id="data-container" class="data-entries">
+                <!-- Data entries will be rendered here by the data.js script -->
+                <p class="loading-msg">Loading entries...</p>
+            </div>
         </div>
 
         <div id="githubAuth" class="auth-modal">
             <div class="auth-content">
                 <h2>GitHub Authentication</h2>
-                <p>Enter your GitHub credentials to push the changes:</p>
+                <p>Enter your GitHub credentials to save this entry:</p>
                 <div class="input-group">
                     <label for="githubToken">Personal Access Token:</label>
                     <input type="password" id="githubToken">
@@ -56,5 +67,24 @@
 
     <script src="github-api.js"></script>
     <script src="script.js"></script>
+    <!-- Import the data.js file to display existing entries -->
+    <script type="module">
+        // Try to import data.js to display existing entries
+        try {
+            import('./data.js')
+                .then(module => {
+                    if (module.renderDataEntries) {
+                        module.renderDataEntries();
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading data.js:', err);
+                    document.querySelector('.loading-msg').textContent = 'No entries found. Add your first entry above!';
+                });
+        } catch (error) {
+            console.error('Error importing data.js:', error);
+            document.querySelector('.loading-msg').textContent = 'No entries found. Add your first entry above!';
+        }
+    </script>
 </body>
 </html>
