@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Code Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Dynamic Code Generator</h1>
+        
+        <div class="input-group">
+            <label for="input1">First Input:</label>
+            <input type="text" id="input1" placeholder="Enter your first value">
+        </div>
+        
+        <div class="input-group">
+            <label for="input2">Second Input:</label>
+            <input type="text" id="input2" placeholder="Enter your second value">
+        </div>
+        
+        <div class="input-group">
+            <label for="codeOutput">Generated Code for data.js:</label>
+            <textarea id="codeOutput" readonly></textarea>
+        </div>
+        
+        <div class="button-group">
+            <button id="generateBtn">Generate Code</button>
+            <button id="pushToGithubBtn">Push to GitHub</button>
+            <button id="copyCodeBtn">Copy Code</button>
+        </div>
+        
+        <div id="statusMessage" class="status"></div>
+        
+        <div>
+            <h3>Preview:</h3>
+            <div id="preview" class="preview"></div>
+        </div>
+
+        <div id="githubAuth" class="auth-modal">
+            <div class="auth-content">
+                <h2>GitHub Authentication</h2>
+                <p>Enter your GitHub credentials to push the changes:</p>
+                <div class="input-group">
+                    <label for="githubToken">Personal Access Token:</label>
+                    <input type="password" id="githubToken">
+                </div>
+                <div class="button-group">
+                    <button id="submitAuthBtn">Submit</button>
+                    <button id="cancelAuthBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="github-api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
