@@ -33,17 +33,59 @@ function generateCode() {
     
     const timestamp = new Date().toISOString();
     
-    const code = `// Generated on ${timestamp}
-const data = {
+    // Create a new data entry
+    const newEntry = {
+        firstValue: val1,
+        secondValue: val2,
+        timestamp: timestamp
+    };
+    
+    // Format the entry as a JavaScript object
+    const entryCode = `  {
     firstValue: "${val1}",
     secondValue: "${val2}",
     timestamp: "${timestamp}"
-};
-
-// Export the data object
-export default data;`;
+  }`;
     
-    codeOutput.value = code;
+    // Create code for a new data.js file if none exists
+    const initialCode = `// Data entries
+const dataEntries = [
+${entryCode}
+];
+
+// Function to render entries to the page
+function renderDataEntries() {
+  const container = document.getElementById('data-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  dataEntries.forEach((entry, index) => {
+    const entryDiv = document.createElement('div');
+    entryDiv.className = 'data-entry';
+    entryDiv.innerHTML = \`
+      <h3>Entry #\${index + 1}</h3>
+      <p><strong>First Value:</strong> \${entry.firstValue}</p>
+      <p><strong>Second Value:</strong> \${entry.secondValue}</p>
+      <p><strong>Timestamp:</strong> \${new Date(entry.timestamp).toLocaleString()}</p>
+    \`;
+    container.appendChild(entryDiv);
+  });
+}
+
+// Export the data
+export { dataEntries, renderDataEntries };
+
+// Auto-render when the page loads
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', renderDataEntries);
+}`;
+    
+    codeOutput.value = initialCode;
+    
+    // Store the new entry for use when pushing to GitHub
+    window.newDataEntry = entryCode;
+    
     updatePreview(val1, val2, timestamp);
     showStatus('Code generated successfully', 'success');
 }
