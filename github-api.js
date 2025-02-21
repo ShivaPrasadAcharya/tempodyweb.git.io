@@ -1,205 +1,122 @@
-/**
- * GitHub API wrapper for pushing file changes
- */
+// GitHub API handling
 
-// Get the current file content and SHA
-async function getFileInfo(config) {
-    const { owner, repo, path, branch, token } = config;
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
-    
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
-            }
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to get file info: ${response.status}`);
-        }
-        
-        const fileInfo = await response.json();
-        
-        // Decode the content if it exists
-        if (fileInfo.content) {
-            fileInfo.decodedContent = decodeURIComponent(escape(atob(fileInfo.content)));
-        }
-        
-        return fileInfo;
-    } catch (error) {
-        console.error('Error getting file info:', error);
-        
-        // If file doesn't exist (404), return null
-        if (error.message.includes('404')) {
-            return null;
-        }
-        
-        throw error;
+// Configuration - Replace these with actual values
+const GITHUB_TOKEN = ''; // You'll need to provide this securely
+const REPO_OWNER = 'ShivaPrasadAcharya';
+const REPO_NAME = 'tempodyweb.git.io';
+const FILE_PATH = 'data.js';
+
+// Function to save the current contentData to GitHub
+function saveToGitHub() {
+    // Check if token is available
+    if (!GITHUB_TOKEN) {
+        console.error('GitHub token is not configured. Cannot save to GitHub.');
+        alert('GitHub token is not configured. Changes will not be saved to GitHub.');
+        return;
     }
-}
-
-// Update or create a file on GitHub
-async function updateOrCreateFile(newEntryContent, config, existingFile = null) {
-    const { owner, repo, path, branch, token } = config;
-    const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
     
-    let finalContent = '';
-    
-    // If file exists, append the new entry to existing data
-    if (existingFile && existingFile.decodedContent) {
-        // Try to find where the array entries are
-        const content = existingFile.decodedContent;
-        
-        if (content.includes('const dataEntries = [')) {
-            // Find position to insert new entry (after the opening bracket)
-            const arrayStartPos = content.indexOf('const dataEntries = [') + 'const dataEntries = ['.length;
+    // First, get the current file to get its SHA
+    getFileContent()
+        .then(fileData => {
+            // Prepare the updated content
+            const updatedContent = `const contentData = ${JSON.stringify(contentData, null, 2)};`;
             
-            // Insert new entry at the beginning of the array
-            finalContent = 
-                content.substring(0, arrayStartPos) + 
-                '\n' + newEntryContent + ',' + 
-                content.substring(arrayStartPos);
-        } else {
-            // If file exists but doesn't have our expected format, replace it
-            finalContent = `// Data entries
-const dataEntries = [
-${newEntryContent}
-];
-
-// Function to render entries to the page
-function renderDataEntries() {
-  const container = document.getElementById('data-container');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  dataEntries.forEach((entry, index) => {
-    const entryDiv = document.createElement('div');
-    entryDiv.className = 'data-entry';
-    entryDiv.innerHTML = \`
-      <h3>Entry #\${index + 1}</h3>
-      <p><strong>First Value:</strong> \${entry.firstValue}</p>
-      <p><strong>Second Value:</strong> \${entry.secondValue}</p>
-      <p><strong>Timestamp:</strong> \${new Date(entry.timestamp).toLocaleString()}</p>
-    \`;
-    container.appendChild(entryDiv);
-  });
+            // Update the file
+            return updateFile(fileData.sha, updatedContent);
+        })
+        .then(response => {
+            console.log('Successfully updated data.js file');
+            alert('Content successfully saved to GitHub!');
+        })
+        .catch(error => {
+            console.error('Error saving to GitHub:', error);
+            alert('Failed to save to GitHub. See console for details.');
+        });
 }
 
-// Export the data
-export { dataEntries, renderDataEntries };
-
-// Auto-render when the page loads
-if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', renderDataEntries);
-}`;
+// Function to get current file content and SHA
+function getFileContent() {
+    return fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json'
         }
-    } else {
-        // No existing file, create a new one
-        finalContent = `// Data entries
-const dataEntries = [
-${newEntryContent}
-];
-
-// Function to render entries to the page
-function renderDataEntries() {
-  const container = document.getElementById('data-container');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  dataEntries.forEach((entry, index) => {
-    const entryDiv = document.createElement('div');
-    entryDiv.className = 'data-entry';
-    entryDiv.innerHTML = \`
-      <h3>Entry #\${index + 1}</h3>
-      <p><strong>First Value:</strong> \${entry.firstValue}</p>
-      <p><strong>Second Value:</strong> \${entry.secondValue}</p>
-      <p><strong>Timestamp:</strong> \${new Date(entry.timestamp).toLocaleString()}</p>
-    \`;
-    container.appendChild(entryDiv);
-  });
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`GitHub API request failed: ${response.status}`);
+        }
+        return response.json();
+    });
 }
 
-// Export the data
-export { dataEntries, renderDataEntries };
+// Function to update the file with new content
+function updateFile(fileSha, content) {
+    return fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            message: 'Update data.js via web app',
+            content: btoa(content), // Base64 encode the content
+            sha: fileSha
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`GitHub API request failed: ${response.status}`);
+        }
+        return response.json();
+    });
+}
 
-// Auto-render when the page loads
-if (typeof window !== 'undefined') {
-  window.addEventListener('DOMContentLoaded', renderDataEntries);
-}`;
-    }
+// Alternative implementation for environments where GitHub API cannot be used directly
+// This displays a text area with the code that needs to be copied manually
+function showManualUpdateOption() {
+    const updatedContent = `const contentData = ${JSON.stringify(contentData, null, 2)};`;
     
-    const contentEncoded = btoa(unescape(encodeURIComponent(finalContent)));
+    // Create modal or other UI to show the content
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '50%';
+    modal.style.left = '50%';
+    modal.style.transform = 'translate(-50%, -50%)';
+    modal.style.backgroundColor = 'white';
+    modal.style.padding = '20px';
+    modal.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+    modal.style.zIndex = '1000';
+    modal.style.maxWidth = '80%';
+    modal.style.maxHeight = '80%';
+    modal.style.overflow = 'auto';
     
-    const requestBody = {
-        message: `Add new data entry via web interface - ${new Date().toISOString()}`,
-        content: contentEncoded,
-        branch
+    const heading = document.createElement('h3');
+    heading.textContent = 'Copy this code to data.js file:';
+    
+    const textarea = document.createElement('textarea');
+    textarea.value = updatedContent;
+    textarea.style.width = '100%';
+    textarea.style.height = '300px';
+    textarea.style.marginTop = '10px';
+    textarea.style.marginBottom = '10px';
+    
+    const closeButton = document.createElement('button');
+    closeButton.textContent = 'Close';
+    closeButton.style.padding = '8px 16px';
+    closeButton.style.backgroundColor = '#4285f4';
+    closeButton.style.color = 'white';
+    closeButton.style.border = 'none';
+    closeButton.style.borderRadius = '4px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.onclick = function() {
+        document.body.removeChild(modal);
     };
     
-    // If updating an existing file, include the SHA
-    if (existingFile) {
-        requestBody.sha = existingFile.sha;
-    }
+    modal.appendChild(heading);
+    modal.appendChild(textarea);
+    modal.appendChild(closeButton);
     
-    try {
-        const response = await fetch(apiUrl, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Failed to update file: ${response.status}`);
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Error updating file:', error);
-        throw error;
-    }
-}
-
-// Main function to push content to GitHub
-async function pushToGithub(config) {
-    try {
-        // Get the new entry content from window object
-        const newEntryContent = window.newDataEntry;
-        
-        if (!newEntryContent) {
-            throw new Error('No data entry found. Please generate code first.');
-        }
-        
-        // Try to get existing file
-        const existingFile = await getFileInfo(config);
-        
-        // Update or create the file with the new entry
-        const result = await updateOrCreateFile(newEntryContent, config, existingFile);
-        
-        // Store the token in session storage (will be cleared when browser is closed)
-        if (config.token) {
-            sessionStorage.setItem('githubToken', config.token);
-        }
-        
-        return {
-            success: true,
-            sha: result.commit.sha,
-            url: result.content.html_url
-        };
-    } catch (error) {
-        console.error('Error pushing to GitHub:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
+    document.body.appendChild(modal);
 }
